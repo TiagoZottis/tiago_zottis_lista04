@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuscaCep</title>
+</head>
+<body>
+    <h1>buscaCep</h1>
+
+    <input type="text" id="cep" placeholder="Digite o CEP">
+    <button id="buscar">Buscar</button>
+    <div id="resultado"></div>
+
+    <script>
+        const inputCep = document.querySelector('#cep');
+        const btn = document.querySelector('#buscar');
+        const resultado = document.querySelector('#resultado'); 
+
+        const mostrarErro = () => {
+            resultado.innerHTML = '<p>Erro ao buscar endereço</p>'
+        }
+
+        const buscarEndereço = () => {
+
+            // Remover oq n for numero
+            const cep = inputCep.value.replace(/\D/g, '');
+
+            if(cep.length !== 8){
+                mostrarErro();
+                return;
+            }
+
+            // Puxar API
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(resposta =>{
+                    if(!resposta.ok) throw new Error('resposta invalida');
+                    return resposta.json();
+                })
+                .then(dados => {
+
+                    // Erro qnd o cep nao existe
+                    if(dados.Error){
+                        mostrarErro();
+                        return;
+                    }
+                    resultado.innerHTML = `
+                        <p><strong>Logradouro:</strong> ${dados.logradouro}</p>
+                        <p><strong>Bairro:</strong> ${dados.bairro}</p>
+                        <p><strong>Cidade:</strong> ${dados.localidade}</p>
+                        <p><strong>Estado:</strong> ${dados.uf}</p>
+                    `;
+                })
+                
+                .catch(mostrarErro);
+        }
+
+        btn.addEventListener('click', buscarEndereço);
+    </script>
+</body>
+</html>

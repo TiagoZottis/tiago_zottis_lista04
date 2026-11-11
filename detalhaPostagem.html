@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalha Postagem</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; padding: 0 16px; }
+        label { display: block; margin-bottom: 6px; }
+        select { width: 100%; padding: 10px; font-size: 14px; box-sizing: border-box; margin-bottom: 10px; }
+        .titulo { background: #eee; border: 1px solid #ddd; padding: 4px 6px; cursor: pointer; }
+        .titulo:hover { background: #e0e0e0; }
+        .titulo.selecionado { background: #d0d0d0; }
+        .detalhes { padding: 10px 6px 14px; }
+        .detalhes h3 { margin: 0 0 8px; }
+        .comentarios { font-size: 13px; }
+        .comentarios p { margin: 6px 0; }
+    </style>
+</head>
+<body>
+    <h1>detalhaPostagem</h1>
+
+    <label for="usuario">Usuario</label>
+    <select id="usuario">
+        <option value="">Selecione um usuario</option>
+    </select>
+
+    <div id="postagens"></div>
+    <script>
+        const api = 'https://jsonplaceholder.typicode.com';
+        const selecionaUsuario = document.querySelector('#usuario');
+        const areaPostagem = document.querySelector('#postagens');
+
+        // Carregar Usuarios
+        fetch(`${api}/users`)
+            .then(resposta => resposta.json())
+            .then(usuarios => {
+                usuarios.forEach(usuario => {
+                    const option = document.createElement('option');
+                    option.value = usuario.id;
+                    option.textContent = usuario.name;
+                    selecionaUsuario.appendChild(option);
+                });
+            })
+            .catch(() => {
+            areaPostagem.textContent = 'Erro ao carregar usuarios.';
+            });
+
+        // Carregar postagem do usuario selecionado
+        selecionaUsuario.addEventListener('change', () => {
+            const id = selecionaUsuario.value;
+            areaPostagem.innerHTML = '';
+            if(!id) return;
+
+            fetch(`${api}/posts?userId=${id}`)
+                .then(resposta => resposta.json())
+                .then(posts => {
+                    posts.forEach(post => {
+                        const titulo = document.createElement('div');
+                        titulo.className = 'titulo';
+                        titulo.textContent = post.title;
+                        titulo.addEventListener('click', () => detalharPostagem(post.id, titulo));
+                        areaPostagem.appendChild(titulo);
+                    });
+                })
+                .catch(() => {
+                    areaPostagem.textContent = 'Erro ao carregar as postagens.';
+                });
+        });
+
+        // Busca da postagem completa e os comentarios
+        const detalharPostagem = (id, titulo) => {
+            // Remover caso tenha aberto outros
+            document.querySelectorAll('.detalhes').forEach(elemento => elemento.remove());
+            document.querySelectorAll('.titulo').forEach(elemento => elemento.classList.remove('selecionado'));
+            titulo.classList.add('selecionado');
+
+            Promise.all([
+                fetch(`${api}/posts/${id}`)
+                    .then(resposta => resposta.json()),
+                fetch(`${api}/posts/${id}/comments`)
+                    .then(resposta => resposta.json())
+            ])
+                .then(([post, comentarios]) => {
+                    const detalhes = document.createElement('div');
+                    detalhes.className = 'detalhes';
+
+                    const h3 = document.createElement('h3');
+                    h3.textContent = post.title;
+
+                    const corpo = document.createElement('p');
+                    corpo.textContent = post.body;
+
+                    const tituloComent = document.createElement('h4');
+                    tituloComent.textContent = 'Comentarios:';
+
+                    const listaComent = document.createElement('div');
+                    listaComent.className = 'comentarios';
+
+                    comentarios.forEach(c => {
+                        const p = document.createElement('p');
+                        const nome = document.createElement('strong');
+                        nome.textContent = c.name;
+                        p.appendChild(nome);
+                        p.append(`: ${c.body}`);
+                        listaComent.appendChild(p);
+                    });
+
+                    detalhes.append(h3, corpo, tituloComent, listaComent);
+
+                    titulo.after(detalhes);
+                })
+                .catch(() => {
+                    const erro = document.createElement('div');
+                    erro.className = 'detalhes';
+                    erro.textContent = 'Erro ao carregar detalhes da postagem.';
+                    titulo.after(erro);
+                });
+        };
+
+    </script>
+</body>
+</html>
